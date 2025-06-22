@@ -13,6 +13,15 @@ st.markdown("""
 Ứng dụng AI nâng cao giúp phân tích **cầu Baccarat**: thống kê, nhận dạng mẫu, phản cầu, xu hướng tâm lý & dự đoán liên tục nhiều ván tiếp theo.
 """)
 
+# Tuỳ chọn chiến lược AI
+strategy = st.selectbox("🎯 Chọn chiến lược AI phân tích:", [
+    "Phản cầu (Anti-trend)",
+    "Cầu bệt (Trend following)",
+    "Cầu đảo (Alternate)",
+    "Tự động (Smart Mix AI)"])
+
+risk_level = st.radio("📉 Mức độ rủi ro mong muốn:", ["Thấp", "Trung bình", "Cao"])
+
 # Nhập dữ liệu
 data_input = st.text_area("📋 Nhập kết quả ván (P/B/T):", placeholder="Ví dụ: P B P P B B T B P...")
 
@@ -66,14 +75,21 @@ if data_input:
 
     st.subheader("🔮 AI Dự Đoán 3 Ván Tiếp Theo")
 
-    def ai_predict(data):
+    def ai_predict(data, mode):
         if len(data) < 4:
             return ["Không đủ dữ liệu"]
 
         def score(seq):
-            p = seq.count("P")
-            b = seq.count("B")
-            return "B" if p > b else "P"
+            if mode == "Phản cầu (Anti-trend)":
+                return "B" if seq[-1] == "P" else "P"
+            elif mode == "Cầu bệt (Trend following)":
+                return seq[-1]
+            elif mode == "Cầu đảo (Alternate)":
+                return "B" if seq[-1] == "P" else "P"
+            else:  # Smart Mix
+                p = seq.count("P")
+                b = seq.count("B")
+                return "B" if p > b else "P"
 
         last4 = data[-4:]
         prediction = []
@@ -83,19 +99,26 @@ if data_input:
             last4.append(guess)
         return prediction
 
-    pred3 = ai_predict(results)
+    pred3 = ai_predict(results, strategy)
     if isinstance(pred3[0], str):
         for i, v in enumerate(pred3):
-            st.success(f"🧠 Ván {len(results)+i+1}: Gợi ý đánh **{v}**")
+            st.success(f"🧠 Ván {len(results)+i+1}: Gợi ý đánh **{v}** theo chiến lược '{strategy}'")
 
     st.markdown("---")
-    st.subheader("📈 Dự đoán liên tiếp: Nếu đúng hoặc sai thì sao?")
+    st.subheader("📈 Nếu đúng thì nên làm gì tiếp?")
     def follow_up_strategy(pred):
         return "B" if pred == "P" else "P"
 
     for i, p in enumerate(pred3):
         f = follow_up_strategy(p)
-        st.markdown(f"🔁 Nếu ván {len(results)+i+1} **đúng ({p})**, thì cân nhắc **{f}** ở ván tiếp theo.")
+        st.markdown(f"🔁 Nếu ván {len(results)+i+1} **đúng ({p})**, nên cân nhắc cược **{f}** ở ván sau.")
+
+    st.markdown("---")
+    st.subheader("💸 Gợi ý mức cược theo rủi ro")
+    risk_mapping = {"Thấp": 10, "Trung bình": 30, "Cao": 60}
+    base_bet = risk_mapping[risk_level]
+    for i, pred in enumerate(pred3):
+        st.info(f"💰 Ván {len(results)+i+1}: Gợi ý cược {base_bet*(i+1)} đơn vị theo chiến lược '{strategy}'")
 
     st.success("✔️ Phân tích hoàn tất. Có thể nhập dữ liệu mới để cập nhật.")
 
